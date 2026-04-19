@@ -39,6 +39,35 @@ jobs:
           hide_branch_rate: false
           hide_complexity: true
 
+      - name: Append QA summary
+        run: |
+          node -e '
+          const fs = require("fs");
+          const path = "coverage/coverage-summary.json";
+          const summary = JSON.parse(fs.readFileSync(path, "utf8"));
+          const total = summary.total;
+          const lines = [
+            "## QA Summary",
+            "",
+            "| Metric | Coverage | Covered / Total |",
+            "| --- | ---: | ---: |",
+            `| Statements | ${total.statements.pct}% | ${total.statements.covered} / ${total.statements.total} |`,
+            `| Branches | ${total.branches.pct}% | ${total.branches.covered} / ${total.branches.total} |`,
+            `| Functions | ${total.functions.pct}% | ${total.functions.covered} / ${total.functions.total} |`,
+            `| Lines | ${total.lines.pct}% | ${total.lines.covered} / ${total.lines.total} |`,
+            "",
+            "### Commands",
+            "",
+            "- `npm test`",
+            "- `npm run test:coverage`",
+            "",
+            "### Artifacts",
+            "",
+            "- HTML coverage report uploaded as `coverage-report`",
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+          '
+
       - name: Publish coverage summary
         run: cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
 
