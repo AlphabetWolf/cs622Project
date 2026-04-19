@@ -30,7 +30,7 @@ jobs:
       - name: Build coverage summary
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          filename: coverage/lcov.info
+          filename: coverage/cobertura-coverage.xml
           badge: false
           format: markdown
           indicators: true

@@ -5,7 +5,7 @@
     "test": "vitest run app.test.js --globals",
     "test:blackbox": "playwright test",
     "test:coverage:c8": "c8 --reporter=text --reporter=lcov --all --include=app.js npm test",
-    "test:coverage": "vitest run app.test.js --globals --coverage.enabled --coverage.provider=v8 --coverage.reporter=text --coverage.reporter=lcov --coverage.reporter=html --coverage.include=app.js"
+    "test:coverage": "vitest run app.test.js --globals --coverage.enabled --coverage.provider=v8 --coverage.reporter=text --coverage.reporter=lcov --coverage.reporter=html --coverage.reporter=cobertura --coverage.include=app.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
