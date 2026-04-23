@@ -95,6 +95,15 @@ describe("white-box pure function tests", () => {
     ).toBe(3);
   });
 
+  it("returns zero whole-day difference for the same date", () => {
+    expect(
+      window.getDaysDifference(
+        new Date("2026-04-01T00:00:00"),
+        new Date("2026-04-01T00:00:00"),
+      ),
+    ).toBe(0);
+  });
+
   it("calculates absolute whole-day differences when dates are reversed", () => {
     expect(
       window.getDaysDifference(
@@ -120,6 +129,15 @@ describe("white-box pure function tests", () => {
         new Date("2026-02-15T00:00:00"),
       ),
     ).toBe(3);
+  });
+
+  it("returns negative whole-month differences when dates are reversed", () => {
+    expect(
+      window.getMonthsDifference(
+        new Date("2026-04-15T00:00:00"),
+        new Date("2026-01-15T00:00:00"),
+      ),
+    ).toBe(-3);
   });
 
   it("lightens colors without exceeding ff", () => {
@@ -179,8 +197,16 @@ describe("white-box pure function tests", () => {
     expect(window.formatFileSize(512)).toBe("512 bytes");
   });
 
+  it("switches from bytes to KB exactly at 1024 bytes", () => {
+    expect(window.formatFileSize(1024)).toBe("1.0 KB");
+  });
+
   it("formats kilobyte-sized file sizes with one decimal place", () => {
     expect(window.formatFileSize(2048)).toBe("2.0 KB");
+  });
+
+  it("switches from KB to MB exactly at one megabyte", () => {
+    expect(window.formatFileSize(1024 * 1024)).toBe("1.0 MB");
   });
 
   it("formats megabyte-sized file sizes with one decimal place", () => {

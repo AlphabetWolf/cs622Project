@@ -11,6 +11,7 @@ This project is organized around three main testing activities:
 - Black-box GUI testing using Playwright to validate complete user-visible workflows in the browser.
 
 Code coverage and mutation testing are treated as test effectiveness and quality evaluation activities rather than separate primary testing types.
+Coverage reporting in this repository is based on the white-box suites, while black-box and GUI tests are used mainly for behavior validation and defect discovery.
 
 ## Project Progress
 

@@ -160,6 +160,72 @@ describe("black-box functional tests using EP, BA, EG, and simple combinations",
     expect(window.document.getElementById("tx-list").textContent).toContain("Lunch");
   });
 
+  it("BA: clearing the search input restores the full visible transaction list", () => {
+    submitTransaction(window, {
+      amount: 18,
+      account: "cash",
+      type: "expense",
+      category: "Food & Dining",
+      description: "Lunch",
+      date: "2026-04-19",
+    });
+    submitTransaction(window, {
+      amount: 1200,
+      account: "cu",
+      type: "income",
+      category: "Income",
+      description: "Salary",
+      date: "2026-04-20",
+    });
+
+    changeValue(window, "#search-input", "Lunch", "input");
+    expect(window.document.getElementById("tx-list").textContent).toContain("Lunch");
+    expect(window.document.getElementById("tx-list").textContent).not.toContain("Salary");
+
+    changeValue(window, "#search-input", "   ", "input");
+    const text = window.document.getElementById("tx-list").textContent;
+    expect(text).toContain("Lunch");
+    expect(text).toContain("Salary");
+  });
+
+  it("BA: end-date filtering includes a transaction exactly on the upper boundary", () => {
+    submitTransaction(window, {
+      amount: 15,
+      account: "cash",
+      type: "expense",
+      category: "Other",
+      description: "Boundary End",
+      date: "2026-04-30",
+    });
+    submitTransaction(window, {
+      amount: 16,
+      account: "cash",
+      type: "expense",
+      category: "Other",
+      description: "After Range",
+      date: "2026-05-01",
+    });
+
+    changeValue(window, "#date-range-filter", "custom");
+    changeValue(window, "#custom-start-date", "2026-04-01");
+    changeValue(window, "#custom-end-date", "2026-04-30");
+
+    const text = window.document.getElementById("tx-list").textContent;
+    expect(text).toContain("Boundary End");
+    expect(text).not.toContain("After Range");
+  });
+
+  it("EG: duplicate category names are rejected from the category manager", () => {
+    window.showCategoriesModal();
+    window.document.getElementById("new-category-input").value = "Other";
+
+    window.addNewCategory();
+
+    expect(window.document.querySelector(".update-notification")?.textContent || "").toContain(
+      "This category already exists",
+    );
+  });
+
   it("Combinatorial: account and type filters together isolate the matching transaction", () => {
     submitTransaction(window, {
       amount: 20,
@@ -184,5 +250,65 @@ describe("black-box functional tests using EP, BA, EG, and simple combinations",
     const txListText = window.document.getElementById("tx-list").textContent;
     expect(txListText).toContain("Salary Credit");
     expect(txListText).not.toContain("Cash Lunch");
+  });
+
+  it.fails("Combinatorial: clicking the same account card twice toggles the account filter off", () => {
+    submitTransaction(window, {
+      amount: 10,
+      account: "cash",
+      type: "expense",
+      category: "Other",
+      description: "Cash Item",
+      date: "2026-04-19",
+    });
+    submitTransaction(window, {
+      amount: 20,
+      account: "cu",
+      type: "expense",
+      category: "Other",
+      description: "CU Item",
+      date: "2026-04-19",
+    });
+
+    let cashCard = window.document.querySelector('.card[data-account="cash"]');
+    cashCard.click();
+    expect(window.document.getElementById("tx-list").textContent).toContain("Cash Item");
+    expect(window.document.getElementById("tx-list").textContent).not.toContain("CU Item");
+
+    cashCard = window.document.querySelector('.card[data-account="cash"]');
+    cashCard.click();
+    const text = window.document.getElementById("tx-list").textContent;
+    expect(text).toContain("Cash Item");
+    expect(text).toContain("CU Item");
+  });
+
+  it("EG: search matches transaction notes as well as descriptions", () => {
+    submitTransaction(window, {
+      amount: 42,
+      account: "cash",
+      type: "expense",
+      category: "Other",
+      description: "Hidden Note",
+      date: "2026-04-19",
+    });
+    window.eval(`data.transactions[0].notes = "special boundary memo"; renderTransactions();`);
+
+    changeValue(window, "#search-input", "memo", "input");
+
+    expect(window.document.getElementById("tx-list").textContent).toContain("Hidden Note");
+  });
+
+  it("BA: a zero-amount bill can still be saved through the bill form", () => {
+    window.showAddBillModal();
+    window.document.getElementById("bill-desc").value = "Zero Bill";
+    window.document.getElementById("bill-amount").value = "0";
+    window.document.getElementById("bill-date").value = "2026-04-25";
+    window.document.getElementById("bill-account").value = "cash";
+    window.document.getElementById("bill-category").value = "Other";
+
+    window.saveBill();
+
+    expect(window.eval("data.bills.length")).toBe(1);
+    expect(window.eval("data.bills[0].amount")).toBe(0);
   });
 });

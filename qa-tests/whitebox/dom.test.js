@@ -359,6 +359,35 @@ describe("white-box DOM and state integration-style tests", () => {
     expect(window.document.body.classList.contains("modal-open")).toBe(true);
   });
 
+  it("hides the reset confirmation modal when the cancel button is clicked", () => {
+    window.resetAllData();
+
+    window.document.getElementById("reset-cancel-btn").click();
+
+    expect(window.document.getElementById("reset-confirm-modal").classList.contains("hidden")).toBe(true);
+    expect(window.document.body.classList.contains("modal-open")).toBe(false);
+  });
+
+  it("hides the reset confirmation modal when the close button is clicked", () => {
+    window.resetAllData();
+
+    window.document.getElementById("reset-cancel-close-btn").click();
+
+    expect(window.document.getElementById("reset-confirm-modal").classList.contains("hidden")).toBe(true);
+    expect(window.document.body.classList.contains("modal-open")).toBe(false);
+  });
+
+  it("hides the reset confirmation modal when clicking the modal backdrop", () => {
+    window.resetAllData();
+
+    window.document
+      .getElementById("reset-confirm-modal")
+      .dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+
+    expect(window.document.getElementById("reset-confirm-modal").classList.contains("hidden")).toBe(true);
+    expect(window.document.body.classList.contains("modal-open")).toBe(false);
+  });
+
   it("resets balances and transactions to defaults after confirmation", () => {
     window.eval(`
       data.transactions = [
@@ -844,6 +873,74 @@ describe("white-box DOM and state integration-style tests", () => {
     window.processRecurringTransactions();
 
     expect(window.eval("data.transactions.length")).toBe(0);
+  });
+
+  it("updates the account filter and active card state through the account-filter change event", () => {
+    window.document.getElementById("account-filter").value = "cash";
+    window.document
+      .getElementById("account-filter")
+      .dispatchEvent(new window.Event("change", { bubbles: true }));
+
+    expect(window.eval("filters.account")).toBe("cash");
+    expect(window.document.querySelector('.card[data-account="cash"]').classList.contains("active")).toBe(true);
+  });
+
+  it.fails("toggles the account filter through account-card clicks", () => {
+    const cashCard = window.document.querySelector('.card[data-account="cash"]');
+
+    cashCard.click();
+    expect(window.eval("filters.account")).toBe("cash");
+    expect(window.document.getElementById("account-filter").value).toBe("cash");
+
+    window.document.querySelector('.card[data-account="cash"]').click();
+    expect(window.eval("filters.account")).toBe("all");
+    expect(window.document.getElementById("account-filter").value).toBe("all");
+  });
+
+  it("updates the type filter through the type-filter change event", () => {
+    window.document.getElementById("type-filter").value = "income";
+    window.document
+      .getElementById("type-filter")
+      .dispatchEvent(new window.Event("change", { bubbles: true }));
+
+    expect(window.eval("filters.type")).toBe("income");
+  });
+
+  it("updates sortOrder through the sort-by change event", () => {
+    window.document.getElementById("sort-by").value = "amount-asc";
+    window.document
+      .getElementById("sort-by")
+      .dispatchEvent(new window.Event("change", { bubbles: true }));
+
+    expect(window.eval("sortOrder")).toBe("amount-asc");
+  });
+
+  it("shows the recurring transactions modal with the empty-state message", () => {
+    window.eval(`data.settings.recurringTransactions = [];`);
+
+    window.showRecurringTransactionsModal();
+
+    expect(window.document.getElementById("recurring-tx-modal").classList.contains("hidden")).toBe(false);
+    expect(window.document.getElementById("recurring-tx-list").textContent).toContain(
+      "No recurring transactions set up yet.",
+    );
+  });
+
+  it("renders recurring transactions and wires the action buttons", () => {
+    window.eval(`
+      data.settings.recurringTransactions = [
+        { id: "rec-1", description: "Rent", active: true, frequency: "monthly", amount: 900, account: "cash", lastCreated: "2026-04-01" }
+      ];
+    `);
+
+    window.showRecurringTransactionsModal();
+
+    const text = window.document.getElementById("recurring-tx-list").textContent;
+    expect(text).toContain("Rent");
+    expect(text).toContain("monthly");
+    expect(window.document.querySelectorAll(".toggle-recurring-btn").length).toBe(1);
+    expect(window.document.querySelectorAll(".edit-recurring-btn").length).toBe(1);
+    expect(window.document.querySelectorAll(".delete-recurring-btn").length).toBe(1);
   });
 
   it("connects Google Drive after the simulated delay", () => {
