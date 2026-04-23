@@ -325,6 +325,74 @@ describe("white-box DOM and state integration-style tests", () => {
     expect(window.document.getElementById("edit-tx-modal").classList.contains("hidden")).toBe(false);
   });
 
+  it("opens the edit modal from the edit button and closes it from the cancel button", () => {
+    window.eval(`
+      data.transactions = [
+        {
+          id: "tx-1",
+          amount: 18,
+          account: "cash",
+          type: "expense",
+          description: "Lunch",
+          date: "2026-04-19",
+          category: "Food & Dining",
+          notes: "with friends",
+          isPinned: false,
+          isRecurring: false,
+          attachments: []
+        }
+      ];
+      currentTxIndex = 0;
+    `);
+
+    window.document.getElementById("edit-tx-btn").click();
+    expect(window.document.getElementById("edit-tx-modal").classList.contains("hidden")).toBe(false);
+
+    window.document.getElementById("edit-cancel-btn").click();
+    expect(window.document.getElementById("edit-tx-modal").classList.contains("hidden")).toBe(true);
+    expect(window.document.body.classList.contains("modal-open")).toBe(false);
+  });
+
+  it("submits the edit transaction form through its submit event handler", () => {
+    window.eval(`
+      data.transactions = [
+        {
+          id: "tx-1",
+          amount: 12,
+          account: "cash",
+          type: "expense",
+          description: "Coffee",
+          date: "2026-04-19",
+          category: "Food & Dining",
+          notes: "",
+          isPinned: false,
+          isRecurring: false,
+          attachments: []
+        }
+      ];
+      data.balances.cash = -12;
+      currentTxIndex = 0;
+      tags = [];
+    `);
+
+    window.document.getElementById("edit-tx-amount").value = "13";
+    window.document.getElementById("edit-tx-account").value = "cash";
+    window.document.getElementById("edit-tx-type").value = "expense";
+    window.document.getElementById("edit-tx-desc").value = "Updated by Submit";
+    window.document.getElementById("edit-tx-date").value = "2026-04-19";
+    window.document.getElementById("edit-tx-category").value = "Food & Dining";
+    window.document.getElementById("edit-tx-pinned").checked = false;
+    window.document.getElementById("edit-tx-recurring").checked = false;
+    window.document.getElementById("edit-tx-notes").value = "";
+
+    window.document
+      .getElementById("edit-tx-form")
+      .dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+
+    expect(window.eval("data.transactions[0].description")).toBe("Updated by Submit");
+    expect(window.eval("data.transactions[0].amount")).toBe(13);
+  });
+
   it("deletes a transaction and reverses its balance effect", () => {
     window.eval(`
       data.transactions = [
@@ -745,6 +813,38 @@ describe("white-box DOM and state integration-style tests", () => {
     expect(notifications[0]).toContain("Upgraded from v0.3.5 to v0.5.0");
   });
 
+  it("loads saved accounts, preserves the current version, and backfills missing settings", () => {
+    const notifications = [];
+    window.showUpdateNotification = (message) => notifications.push(message);
+    window.localStorage.setItem(
+      "money-manager-data",
+      JSON.stringify({
+        balances: { cu: 40 },
+        transactions: [{ amount: 5, account: "cu", type: "income", description: "Legacy income", date: "2026-04-19" }],
+        accounts: [
+          { id: "cu", name: "Credit Union", icon: "university" },
+          { id: "revolut", name: "Revolut", icon: "credit-card" },
+          { id: "cash", name: "Cash", icon: "money-bill-wave" },
+          { id: "travel", name: "Travel Wallet", icon: "wallet" },
+        ],
+        settings: { version: "0.5.0" },
+      }),
+    );
+
+    window.loadData();
+
+    expect(window.eval("data.accounts[0].color")).toBe("#4a90e2");
+    expect(window.eval("data.accounts[1].color")).toBe("#50c878");
+    expect(window.eval("data.accounts[2].color")).toBe("#ff9800");
+    expect(window.eval("!!data.accounts[3].color")).toBe(true);
+    expect(window.eval("data.settings.theme")).toBe("light");
+    expect(window.eval("Array.isArray(data.settings.pinnedTransactions)")).toBe(true);
+    expect(window.eval("data.settings.dashboard.defaultView")).toBe("transactions");
+    expect(window.eval("data.settings.backup.googleDrive.connected")).toBe(false);
+    expect(window.eval("data.settings.recurring.autoCreate")).toBe(false);
+    expect(notifications).toEqual([]);
+  });
+
   it("resets to defaults when saved data cannot be parsed", () => {
     window.localStorage.setItem("money-manager-data", "{broken-json");
     window.applyAppSettings = () => {};
@@ -861,6 +961,40 @@ describe("white-box DOM and state integration-style tests", () => {
     );
   });
 
+  it("auto-creates weekly, biweekly, quarterly, and yearly recurring transactions when due", () => {
+    const today = new Date();
+    const eightDaysAgo = new Date(today);
+    eightDaysAgo.setDate(today.getDate() - 8);
+    const fifteenDaysAgo = new Date(today);
+    fifteenDaysAgo.setDate(today.getDate() - 15);
+    const fourMonthsAgo = new Date(today);
+    fourMonthsAgo.setMonth(today.getMonth() - 4);
+    const thirteenMonthsAgo = new Date(today);
+    thirteenMonthsAgo.setMonth(today.getMonth() - 13);
+
+    window.eval(`
+      data.settings.recurring.autoCreate = true;
+      data.settings.recurring.notifications = false;
+      data.settings.recurringTransactions = [
+        { id: "rec-weekly", active: true, frequency: "weekly", amount: 11, account: "cash", type: "expense", description: "Weekly Fee", category: "Other", lastCreated: "${eightDaysAgo.toISOString().split("T")[0]}" },
+        { id: "rec-biweekly", active: true, frequency: "biweekly", amount: 12, account: "cash", type: "expense", description: "Biweekly Fee", category: "Other", lastCreated: "${fifteenDaysAgo.toISOString().split("T")[0]}" },
+        { id: "rec-quarterly", active: true, frequency: "quarterly", amount: 13, account: "cu", type: "income", description: "Quarterly Bonus", category: "Income", lastCreated: "${fourMonthsAgo.toISOString().split("T")[0]}" },
+        { id: "rec-yearly", active: true, frequency: "yearly", amount: 14, account: "revolut", type: "income", description: "Yearly Return", category: "Income", lastCreated: "${thirteenMonthsAgo.toISOString().split("T")[0]}" }
+      ];
+      data.transactions = [];
+      data.balances.cash = 0;
+      data.balances.cu = 0;
+      data.balances.revolut = 0;
+    `);
+
+    window.processRecurringTransactions();
+
+    expect(window.eval("data.transactions.length")).toBe(4);
+    expect(window.eval("data.balances.cash")).toBe(-23);
+    expect(window.eval("data.balances.cu")).toBe(13);
+    expect(window.eval("data.balances.revolut")).toBe(14);
+  });
+
   it("skips inactive recurring transactions during processing", () => {
     window.eval(`
       data.settings.recurring.autoCreate = true;
@@ -885,14 +1019,16 @@ describe("white-box DOM and state integration-style tests", () => {
     expect(window.document.querySelector('.card[data-account="cash"]').classList.contains("active")).toBe(true);
   });
 
-  it.fails("toggles the account filter through account-card clicks", () => {
-    const cashCard = window.document.querySelector('.card[data-account="cash"]');
+  it.fails("toggles the account filter through account-card clicks after listeners are rebound", () => {
+    window.document.dispatchEvent(new window.Event("DOMContentLoaded"));
 
+    let cashCard = window.document.querySelector('.card[data-account="cash"]');
     cashCard.click();
     expect(window.eval("filters.account")).toBe("cash");
     expect(window.document.getElementById("account-filter").value).toBe("cash");
 
-    window.document.querySelector('.card[data-account="cash"]').click();
+    cashCard = window.document.querySelector('.card[data-account="cash"]');
+    cashCard.click();
     expect(window.eval("filters.account")).toBe("all");
     expect(window.document.getElementById("account-filter").value).toBe("all");
   });
@@ -1030,6 +1166,30 @@ describe("white-box DOM and state integration-style tests", () => {
     window.URL.createObjectURL = originalCreateObjectURL;
   });
 
+  it("returns early from importData when the file chooser change event has no file", () => {
+    const created = {};
+    const originalCreateElement = window.document.createElement.bind(window.document);
+
+    window.document.createElement = function createElement(tagName) {
+      const element = originalCreateElement(tagName);
+      if (tagName === "input") {
+        created.input = element;
+      }
+      return element;
+    };
+
+    window.importData();
+    Object.defineProperty(created.input, "files", {
+      configurable: true,
+      value: [],
+    });
+    created.input.dispatchEvent(new window.Event("change"));
+
+    expect(window.document.querySelector(".update-notification")).toBeNull();
+
+    window.document.createElement = originalCreateElement;
+  });
+
   it("imports valid JSON data after confirmation", () => {
     const created = {};
     const originalCreateElement = window.document.createElement.bind(window.document);
@@ -1090,6 +1250,50 @@ describe("white-box DOM and state integration-style tests", () => {
     window.setTimeout = originalSetTimeout;
   });
 
+  it("does not replace current data when import confirmation is canceled", () => {
+    const created = {};
+    const originalCreateElement = window.document.createElement.bind(window.document);
+    const originalFileReader = window.FileReader;
+
+    window.eval(`data.balances.cash = 99;`);
+
+    window.document.createElement = function createElement(tagName) {
+      const element = originalCreateElement(tagName);
+      if (tagName === "input") {
+        created.input = element;
+      }
+      return element;
+    };
+
+    window.FileReader = class MockFileReader {
+      readAsText() {
+        this.onload({
+          target: {
+            result: JSON.stringify({
+              balances: { cu: 1, revolut: 2, cash: 3 },
+              transactions: [],
+            }),
+          },
+        });
+      }
+    };
+
+    window.confirm = () => false;
+
+    window.importData();
+    Object.defineProperty(created.input, "files", {
+      configurable: true,
+      value: [{ name: "backup.json" }],
+    });
+    created.input.dispatchEvent(new window.Event("change"));
+
+    expect(window.eval("data.balances.cash")).toBe(99);
+    expect(window.document.querySelector(".update-notification")).toBeNull();
+
+    window.document.createElement = originalCreateElement;
+    window.FileReader = originalFileReader;
+  });
+
   it("shows an error notification when imported JSON is invalid", () => {
     const created = {};
     const originalCreateElement = window.document.createElement.bind(window.document);
@@ -1126,6 +1330,231 @@ describe("white-box DOM and state integration-style tests", () => {
 
     window.document.createElement = originalCreateElement;
     window.FileReader = originalFileReader;
+  });
+
+  it("applies the system theme and reacts to preference changes while system mode is active", () => {
+    let changeHandler;
+    window.matchMedia = () => ({
+      matches: true,
+      addEventListener(event, handler) {
+        if (event === "change") {
+          changeHandler = handler;
+        }
+      },
+      removeEventListener() {},
+    });
+
+    window.eval(`data.settings.theme = "system";`);
+    window.applyTheme("system");
+    expect(window.document.documentElement.getAttribute("data-theme")).toBe("dark");
+
+    changeHandler({ matches: false });
+    expect(window.document.documentElement.getAttribute("data-theme")).toBe("light");
+  });
+
+  it("applies a non-system theme directly", () => {
+    window.applyTheme("dark");
+
+    expect(window.document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(window.eval("data.settings.theme")).toBe("dark");
+  });
+
+  it("keeps the current theme when the system listener fires after leaving system mode", () => {
+    let changeHandler;
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener(event, handler) {
+        if (event === "change") {
+          changeHandler = handler;
+        }
+      },
+      removeEventListener() {},
+    });
+
+    window.applyTheme("system");
+    window.eval(`data.settings.theme = "light";`);
+    changeHandler({ matches: true });
+
+    expect(window.document.documentElement.getAttribute("data-theme")).toBe("light");
+  });
+
+  it("shows the update notification and stores the version when the app version changed", () => {
+    const originalSetTimeout = window.setTimeout;
+    let scheduledReload;
+
+    window.localStorage.setItem("app-version", "0.0.1");
+    window.setTimeout = (fn) => {
+      scheduledReload = fn;
+      return 0;
+    };
+
+    window.checkForUpdates();
+
+    expect(window.document.body.textContent).toContain("New version available");
+    expect(window.localStorage.getItem("app-version")).toBe("0.5.0");
+    expect(typeof scheduledReload).toBe("function");
+
+    window.setTimeout = originalSetTimeout;
+  });
+
+  it("shows the up-to-date notification and removes it after the fade-out timers", () => {
+    const originalSetTimeout = window.setTimeout;
+
+    window.localStorage.setItem("app-version", "0.5.0");
+    window.setTimeout = (fn) => {
+      fn();
+      return 0;
+    };
+
+    window.checkForUpdates();
+
+    expect(window.document.querySelector(".update-notification")).toBeNull();
+
+    window.setTimeout = originalSetTimeout;
+  });
+
+  it("returns an empty attachments array when no files are provided", async () => {
+    const attachments = await window.processAttachments([]);
+
+    expect(attachments).toEqual([]);
+  });
+
+  it("skips non-image attachments and resolves when all files are processed", async () => {
+    const attachments = await window.processAttachments([
+      { name: "notes.txt", type: "text/plain", size: 8 },
+    ]);
+
+    expect(attachments).toEqual([]);
+  });
+
+  it("collects image attachments from successful file reads", async () => {
+    const originalFileReader = window.FileReader;
+
+    window.FileReader = class MockFileReader {
+      readAsDataURL(file) {
+        this.onload({ target: { result: `data:${file.type};base64,abc` } });
+      }
+    };
+
+    const attachments = await window.processAttachments([
+      { name: "photo.png", type: "image/png", size: 12 },
+    ]);
+
+    expect(attachments).toEqual([
+      {
+        name: "photo.png",
+        type: "image/png",
+        size: 12,
+        data: "data:image/png;base64,abc",
+      },
+    ]);
+
+    window.FileReader = originalFileReader;
+  });
+
+  it("resolves remaining image attachments when a file reader errors", async () => {
+    const originalFileReader = window.FileReader;
+
+    window.FileReader = class MockFileReader {
+      readAsDataURL(file) {
+        if (file.name === "bad.png") {
+          this.onerror(new Error("failed"));
+        } else {
+          this.onload({ target: { result: `data:${file.type};base64,ok` } });
+        }
+      }
+    };
+
+    const attachments = await window.processAttachments([
+      { name: "bad.png", type: "image/png", size: 1 },
+      { name: "good.jpg", type: "image/jpeg", size: 2 },
+    ]);
+
+    expect(attachments).toEqual([
+      {
+        name: "good.jpg",
+        type: "image/jpeg",
+        size: 2,
+        data: "data:image/jpeg;base64,ok",
+      },
+    ]);
+
+    window.FileReader = originalFileReader;
+  });
+
+  it("rejects an empty tag input", () => {
+    vi.useFakeTimers();
+    window.document.getElementById("new-tag-input").value = "   ";
+
+    window.addNewTag();
+
+    const input = window.document.getElementById("new-tag-input");
+    expect(input.classList.contains("input-error")).toBe(true);
+    vi.advanceTimersByTime(2000);
+    expect(input.classList.contains("input-error")).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("initializes missing tags state and adds a new tag", () => {
+    window.eval(`data.tags = null;`);
+    window.document.getElementById("new-tag-input").value = "travel";
+
+    window.addNewTag();
+
+    expect(window.eval("data.tags")).toContain("travel");
+    expect(window.document.getElementById("new-tag-input").value).toBe("");
+  });
+
+  it("rejects duplicate tags", () => {
+    const notifications = [];
+    window.showUpdateNotification = (message) => notifications.push(message);
+    window.eval(`data.tags = ["travel"];`);
+    window.document.getElementById("new-tag-input").value = "travel";
+
+    window.addNewTag();
+
+    expect(window.eval("data.tags")).toEqual(["travel"]);
+    expect(notifications).toContain("This tag already exists");
+  });
+
+  it("removes a tag from the tag list and tagged transactions", () => {
+    const notifications = [];
+    window.showUpdateNotification = (message) => notifications.push(message);
+    window.eval(`
+      data.tags = ["travel", "food"];
+      data.transactions = [
+        { id: "tx-1", amount: 10, account: "cash", type: "expense", description: "Trip", date: "2026-04-19", category: "Other", tags: ["travel", "food"], isPinned: false, isRecurring: false, notes: "", attachments: [] },
+        { id: "tx-2", amount: 5, account: "cash", type: "expense", description: "Snack", date: "2026-04-19", category: "Other", tags: [], isPinned: false, isRecurring: false, notes: "", attachments: [] }
+      ];
+    `);
+
+    window.removeTag("travel");
+
+    expect(window.eval("data.tags")).toEqual(["food"]);
+    expect(window.eval("data.transactions[0].tags")).toEqual(["food"]);
+    expect(notifications).toContain("Tag removed successfully");
+  });
+
+  it("shows the disconnected Google Drive state when backup is not connected", () => {
+    window.eval(`data.settings.backup.googleDrive.connected = false;`);
+
+    window.initGoogleDriveBackup();
+
+    expect(window.document.getElementById("google-drive-auth").classList.contains("hidden")).toBe(false);
+    expect(window.document.getElementById("google-drive-connected").classList.contains("hidden")).toBe(true);
+  });
+
+  it("shows the connected Google Drive state with a never-backed-up message", () => {
+    window.eval(`
+      data.settings.backup.googleDrive.connected = true;
+      data.settings.backup.googleDrive.lastBackup = null;
+    `);
+
+    window.initGoogleDriveBackup();
+
+    expect(window.document.getElementById("google-drive-auth").classList.contains("hidden")).toBe(true);
+    expect(window.document.getElementById("google-drive-connected").classList.contains("hidden")).toBe(false);
+    expect(window.document.getElementById("last-backup-info").textContent).toContain("Last backup: Never");
   });
 
   it("shows the categories modal and renders category items", () => {
