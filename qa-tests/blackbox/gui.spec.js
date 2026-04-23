@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const path = require("path");
 
-const appUrl = `file://${path.join(__dirname, "..", "index.html")}`;
+const appUrl = `file://${path.join(__dirname, "..", "..", "index.html")}`;
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {

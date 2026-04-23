@@ -2,10 +2,14 @@
   "name": "money-manager",
   "private": true,
   "scripts": {
-    "test": "vitest run app.test.js --globals",
-    "test:blackbox": "playwright test",
+    "test": "vitest run qa-tests/whitebox/func.test.js qa-tests/whitebox/dom.test.js qa-tests/blackbox/functional.test.js --globals",
+    "test:whitebox": "vitest run qa-tests/whitebox/func.test.js qa-tests/whitebox/dom.test.js --globals",
+    "test:whitebox:func": "vitest run qa-tests/whitebox/func.test.js --globals",
+    "test:whitebox:dom": "vitest run qa-tests/whitebox/dom.test.js --globals",
+    "test:blackbox": "vitest run qa-tests/blackbox/functional.test.js --globals",
+    "test:gui": "playwright test",
     "test:coverage:c8": "c8 --reporter=text --reporter=lcov --all --include=app.js npm test",
-    "test:coverage": "vitest run app.test.js --globals --coverage.enabled --coverage.provider=v8 --coverage.reporter=text --coverage.reporter=lcov --coverage.reporter=html --coverage.reporter=cobertura --coverage.reporter=json-summary --coverage.include=app.js"
+    "test:coverage": "vitest run qa-tests/whitebox/func.test.js qa-tests/whitebox/dom.test.js qa-tests/blackbox/functional.test.js --globals --coverage.enabled --coverage.provider=v8 --coverage.reporter=text --coverage.reporter=lcov --coverage.reporter=html --coverage.reporter=cobertura --coverage.reporter=json-summary --coverage.include=app.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
