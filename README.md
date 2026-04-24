@@ -48,10 +48,15 @@ npm run test:gui
 
 ## Current Coverage Summary
 
-- Statements: `74.59%`
-- Branches: `67.81%`
-- Functions: `86.02%`
-- Lines: `74.59%`
+- Statements: `79.75%` (`3171 / 3976`)
+- Branches: `73.97%` (`378 / 511`)
+- Functions: `89.36%` (`84 / 94`)
+- Lines: `79.75%` (`3171 / 3976`)
+
+These coverage results come from the white-box suites:
+
+- `qa-tests/whitebox/func.test.js`
+- `qa-tests/whitebox/dom.test.js`
 
 ## Notes
 
