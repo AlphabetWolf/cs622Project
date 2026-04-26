@@ -4,6 +4,8 @@ test-results/
 playwright-report/
 .nyc_output/
 .vitest/
+qa-tests/mutation/reports/
+qa-tests/mutation/.stryker-tmp/
 
 .DS_Store
 Thumbs.db

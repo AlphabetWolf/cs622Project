@@ -1,0 +1,30 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Stryker config for mutation testing app.js. Run from project root: npm run test:mutation",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "qa-tests/mutation/vitest.config.js",
+    "related": false
+  },
+  "disableTypeChecks": "{app.js,qa-tests/**/*.js}",
+  "mutate": ["app.js"],
+  "reporters": ["html", "clear-text", "progress", "json"],
+  "htmlReporter": {
+    "fileName": "qa-tests/mutation/reports/mutation-report.html"
+  },
+  "jsonReporter": {
+    "fileName": "qa-tests/mutation/reports/mutation-report.json"
+  },
+  "tempDirName": "qa-tests/mutation/.stryker-tmp",
+  "concurrency": 4,
+  "timeoutMS": 30000,
+  "coverageAnalysis": "perTest",
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": null
+  },
+  "incremental": true,
+  "incrementalFile": "qa-tests/mutation/reports/stryker-incremental.json"
+}

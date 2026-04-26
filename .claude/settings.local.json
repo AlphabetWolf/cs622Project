@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Bash(npx vitest *)",
+      "Bash(npm run *)",
+      "Bash(sysctl -n hw.ncpu hw.physicalcpu)",
+      "Bash(awk '/Initial test run|ERROR|ConfigError|Mutation score|Done in|All done|Ramping up|killed.*survived|killed.*timed out|No tests/ {print; next} /Mutation testing/ {match\\($0, /\\([0-9]+\\)%/, a\\); pct=a[1]+0; if \\(pct>=last+5 || pct==100\\) { print; last=pct }}')",
+      "Bash(node -e ' *)",
+      "Bash(awk '{print $2, $9, $10}')"
+    ]
+  }
+}
