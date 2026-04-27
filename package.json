@@ -11,7 +11,7 @@
     "test:coverage:c8": "c8 --reporter=text --reporter=lcov --all --include=app.js npm test",
     "test:coverage": "vitest run qa-tests/whitebox/func.test.js qa-tests/whitebox/dom.test.js --globals --coverage.enabled --coverage.provider=v8 --coverage.reporter=text --coverage.reporter=lcov --coverage.reporter=html --coverage.reporter=cobertura --coverage.reporter=json-summary --coverage.include=app.js",
     "test:mutation": "stryker run qa-tests/mutation/stryker.conf.json",
-    "test:mutation:fresh": "rm -rf qa-tests/mutation/reports/stryker-incremental.json && stryker run qa-tests/mutation/stryker.conf.json"
+    "test:mutation:fresh": "rm qa-tests/mutation/reports/stryker-incremental.json 2>/dev/null || true && stryker run qa-tests/mutation/stryker.conf.json --concurrency \"$(nproc)\""
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

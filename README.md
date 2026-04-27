@@ -22,7 +22,7 @@ Coverage reporting in this repository is based on the white-box suites, while bl
 - [x] Step 5: Implement initial white-box unit and integration-style tests with `Vitest` and `jsdom`
 - [x] Step 6: Add GUI black-box tests with `Playwright` and record discovered defects
 - [x] Step 7: Set up coverage measurement and review statement, branch, and function coverage
-- [ ] Step 8: Run mutation testing and record the initial mutation score
+- [x] Step 8: Run mutation testing and record the initial mutation score
 - [ ] Step 9: Add targeted tests to improve the mutation score
 - [ ] Step 10: Prepare the final report and presentation materials
 
@@ -32,6 +32,9 @@ Coverage reporting in this repository is based on the white-box suites, while bl
 - White-box DOM/state tests: [qa-tests/whitebox/dom.test.js](./qa-tests/whitebox/dom.test.js)
 - Black-box functional tests: [qa-tests/blackbox/functional.test.js](./qa-tests/blackbox/functional.test.js)
 - Black-box GUI tests: [qa-tests/blackbox/gui.spec.js](./qa-tests/blackbox/gui.spec.js)
+- Mutation-targeted tests: [qa-tests/mutation/kill.test.js](./qa-tests/mutation/kill.test.js)
+- Coverage report: [coverage/index.html](./coverage/index.html)
+- Mutation report: [qa-tests/mutation/reports/mutation-report.html](./qa-tests/mutation/reports/mutation-report.html)
 - CI workflow: [.github/workflows/ci.yml](./.github/workflows/ci.yml)
 
 ## How To Run
@@ -44,12 +47,22 @@ npm run test:whitebox:dom
 npm run test:blackbox
 npm run test:coverage
 npm run test:gui
+npm run test:mutation
+npm run test:mutation:fresh
 ```
+
+Mutation testing uses Stryker and requires Node 20 or newer. `npm run test:mutation` uses Stryker's incremental cache when available. `npm run test:mutation:fresh` removes the incremental result file first and then runs Stryker with all available CPU cores:
+
+```bash
+npm run test:mutation:fresh
+```
+
+On this machine, the fresh mutation run used 32 worker processes and completed in `14 minutes 46 seconds`.
 
 ## Current Coverage Summary
 
 - Statements: `79.75%` (`3171 / 3976`)
-- Branches: `73.97%` (`378 / 511`)
+- Branches: `73.71%` (`373 / 506`)
 - Functions: `89.36%` (`84 / 94`)
 - Lines: `79.75%` (`3171 / 3976`)
 
@@ -57,6 +70,41 @@ These coverage results come from the white-box suites:
 
 - `qa-tests/whitebox/func.test.js`
 - `qa-tests/whitebox/dom.test.js`
+
+## Current Mutation Testing Summary
+
+- Tool: `StrykerJS`
+- Mutated source file: `app.js`
+- Mutants generated: `3524`
+- Killed mutants: `1779`
+- Timed out mutants: `21`
+- Survived mutants: `914`
+- Mutants with no coverage: `810`
+- Total mutation score: `51.08%`
+- Covered mutation score: `66.32%`
+
+Mutation testing shows that the current suite kills a little over half of all generated mutants, while a large number of mutants either survive or are not covered. The next useful testing work is to add targeted tests around the surviving and no-coverage areas listed in the Stryker HTML report.
+
+## Current Test Run Status
+
+- `npm test`: passed (`131` tests)
+- `npm run test:coverage`: passed (`120` white-box tests)
+- `npm run test:gui`: failed after Playwright discovery was narrowed to GUI specs only (`10` passed, `2` failed)
+- `npm run test:mutation:fresh`: passed in the latest full run, but took `14 minutes 46 seconds`
+
+The GUI failures are current known behavior gaps:
+
+- Editing a transaction through the browser workflow did not update the visible transaction list from `Old Coffee` to `Updated Coffee`.
+- Deleting the `cash` account did not relabel an existing cash transaction as `Unknown Account`; the transaction details still showed `Cash`.
+
+## Limitations
+
+- Coverage is measured from the white-box suites only, so the coverage percentages do not include the black-box functional or GUI Playwright suites.
+- Branch coverage is lower than statement and function coverage, which means some conditional paths in `app.js` are still untested.
+- Mutation testing found `914` surviving mutants and `810` mutants with no coverage, so the test suite still misses important behavior and uncovered code paths.
+- Mutation testing is expensive for this project. The latest fresh run took `14 minutes 46 seconds` using 32 workers, so it is better suited to manual or scheduled CI rather than every push.
+- GUI testing requires a browser-capable environment. In this sandbox, Chromium could not launch until the test was rerun outside the sandbox.
+- Some browser-adjacent behavior is mocked in tests, including charting, maps, geolocation, and parts of Google Drive backup behavior. Those integrations are not verified against real external services.
 
 ## Notes
 
@@ -66,4 +114,4 @@ These coverage results come from the white-box suites:
 - The GUI black-box suite uses `Playwright`
 - The original application source was kept as the system under test
 - Coverage reporting is generated in CI and summarized in the workflow run
-- Mutation testing is planned as a follow-up activity to evaluate test effectiveness
+- Mutation testing is useful for evaluating test effectiveness, but it is much slower than the normal test and coverage runs. It should not run on every push or pull request by default; a manual or scheduled CI job is a better fit.

@@ -66,6 +66,12 @@ function createAppWindow() {
   return window;
 }
 
+function appDateString(date = new Date()) {
+  const appDate = new Date(date);
+  appDate.setHours(0, 0, 0, 0);
+  return appDate.toISOString().split("T")[0];
+}
+
 describe("white-box DOM and state integration-style tests", () => {
   let window;
 
@@ -922,12 +928,13 @@ describe("white-box DOM and state integration-style tests", () => {
   it("auto-creates a daily recurring transaction and updates balances", () => {
     const notifications = [];
     window.showUpdateNotification = (message) => notifications.push(message);
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
     window.eval(`
       data.settings.recurring.autoCreate = true;
       data.settings.recurring.notifications = true;
       data.settings.recurringTransactions = [
-        { id: "rec-1", active: true, frequency: "daily", amount: 9, account: "cash", type: "expense", description: "Rent", category: "Other", lastCreated: "${yesterday}" }
+        { id: "rec-1", active: true, frequency: "daily", amount: 9, account: "cash", type: "expense", description: "Rent", category: "Other", lastCreated: "${appDateString(yesterday)}" }
       ];
       data.transactions = [];
       data.balances.cash = 0;
@@ -957,7 +964,7 @@ describe("white-box DOM and state integration-style tests", () => {
     expect(window.eval("data.transactions.length")).toBe(1);
     expect(window.eval("data.balances.cu")).toBe(100);
     expect(window.eval("data.settings.recurringTransactions[0].lastCreated")).toBe(
-      new Date().toISOString().split("T")[0],
+      appDateString(),
     );
   });
 
