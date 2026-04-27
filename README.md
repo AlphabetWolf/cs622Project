@@ -13,19 +13,6 @@ This project is organized around three main testing activities:
 Code coverage and mutation testing are treated as test effectiveness and quality evaluation activities rather than separate primary testing types.
 Coverage reporting in this repository is based on the white-box suites, while black-box and GUI tests are used mainly for behavior validation and defect discovery.
 
-## Project Progress
-
-- [x] Step 1: Clone the repository and inspect the project structure
-- [x] Step 2: Measure logic LOC and identify major logic-heavy areas
-- [x] Step 3: Review core workflows and expected behavior
-- [x] Step 4: Design black-box test cases using EP, BA, and EG
-- [x] Step 5: Implement initial white-box unit and integration-style tests with `Vitest` and `jsdom`
-- [x] Step 6: Add GUI black-box tests with `Playwright` and record discovered defects
-- [x] Step 7: Set up coverage measurement and review statement, branch, and function coverage
-- [x] Step 8: Run mutation testing and record the initial mutation score
-- [ ] Step 9: Add targeted tests to improve the mutation score
-- [ ] Step 10: Prepare the final report and presentation materials
-
 ## Current Test Artifacts
 
 - White-box pure function tests: [qa-tests/whitebox/func.test.js](./qa-tests/whitebox/func.test.js)
@@ -56,8 +43,6 @@ Mutation testing uses Stryker and requires Node 20 or newer. `npm run test:mutat
 ```bash
 npm run test:mutation:fresh
 ```
-
-On this machine, the fresh mutation run used 32 worker processes and completed in `14 minutes 46 seconds`.
 
 ## Current Coverage Summary
 
