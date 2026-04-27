@@ -6,6 +6,7 @@ playwright-report/
 .vitest/
 qa-tests/mutation/reports/
 qa-tests/mutation/.stryker-tmp/
+*.log
 
 .DS_Store
 Thumbs.db
