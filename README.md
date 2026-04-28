@@ -24,7 +24,32 @@ Coverage reporting in this repository is based on the white-box suites, while bl
 - Mutation report: [qa-tests/mutation/reports/mutation-report.html](./qa-tests/mutation/reports/mutation-report.html)
 - CI workflow: [.github/workflows/ci.yml](./.github/workflows/ci.yml)
 
-## How To Run
+## Prerequisites
+
+- Node.js 20 or newer
+- npm
+
+## Install Dependencies
+
+Install the project dependencies from `package-lock.json`:
+
+```bash
+npm install
+```
+
+Install the Playwright browser binaries before running GUI tests:
+
+```bash
+npx playwright install
+```
+
+If the GUI tests fail because Linux browser system libraries are missing, install the Playwright system dependencies as well:
+
+```bash
+npx playwright install --with-deps
+```
+
+## How To Run Tests
 
 ```bash
 npm test
